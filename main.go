@@ -1,6 +1,11 @@
 package main
 
 func main() {
-	server := NewAPIServer(":8080")
+	store, err := NewPostgresStorage()
+	if err != nil {
+		panic(err)
+	}
+
+	server := NewAPIServer(":8080", store)
 	server.Start()
 }
