@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 
 	_ "github.com/lib/pq"
 )
@@ -71,8 +72,7 @@ func (s *PostgresStorage) GetAccounts() ([]*Account, error) {
 
 	accounts := []*Account{}
 	for rows.Next() {
-		a := &Account{}
-		err := rows.Scan(&a.ID, &a.FirstName, &a.LastName, &a.Number, &a.Balance, &a.Created_at)
+		a, err := scanIntoAccount(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -91,5 +91,24 @@ func (s *PostgresStorage) UpdateAccount(a *Account) error {
 }
 
 func (s *PostgresStorage) GetAccountById(id int) (*Account, error) {
-	return nil, nil
+	rows, err := s.db.Query("SELECT * FROM accounts WHERE id = $1", id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		return scanIntoAccount(rows)
+	}
+
+	return nil, fmt.Errorf("account with id %d not found", id)
+}
+
+func scanIntoAccount(rows *sql.Rows) (*Account, error) {
+	a := &Account{}
+	err := rows.Scan(&a.ID, &a.FirstName, &a.LastName, &a.Number, &a.Balance, &a.Created_at)
+	if err != nil {
+		return nil, err
+	}
+	return a, nil
 }
