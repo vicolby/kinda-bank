@@ -32,7 +32,33 @@ func NewPostgresStorage() (*PostgresStorage, error) {
 	return &PostgresStorage{db}, nil
 }
 
+func (s *PostgresStorage) Init() error {
+	err := s.CreateAccountTable()
+	return err
+}
+
+func (s *PostgresStorage) CreateAccountTable() error {
+	_, err := s.db.Exec(`
+	CREATE TABLE IF NOT EXISTS accounts (
+		id SERIAL PRIMARY KEY,
+		first_name VARCHAR(255) NOT NULL,
+		last_name VARCHAR(255) NOT NULL,
+		number SERIAL NOT NULL,
+		balance FLOAT NOT NULL,
+		created_at TIMESTAMP NOT NULL DEFAULT NOW()
+		);
+	`)
+
+	return err
+}
+
 func (s *PostgresStorage) CreateAccount(a *Account) error {
+	query := `INSERT INTO accounts (first_name, last_name, number, balance, created_at) VALUES ($1, $2, $3, $4, $5)`
+	_, err := s.db.Query(query, a.FirstName, a.LastName, a.Number, a.Balance, a.Created_at)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
