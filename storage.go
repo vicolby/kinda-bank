@@ -13,6 +13,7 @@ type Storage interface {
 	UpdateAccount(*Account) error
 	GetAccountById(int) (*Account, error)
 	GetAccounts() ([]*Account, error)
+	TransferMoney(from, to int, amount float64) error
 }
 
 type PostgresStorage struct {
@@ -83,7 +84,8 @@ func (s *PostgresStorage) GetAccounts() ([]*Account, error) {
 }
 
 func (s *PostgresStorage) DeleteAccount(id int) error {
-	return nil
+	_, err := s.db.Query("DELETE FROM accounts WHERE id = $1", id)
+	return err
 }
 
 func (s *PostgresStorage) UpdateAccount(a *Account) error {
@@ -102,6 +104,15 @@ func (s *PostgresStorage) GetAccountById(id int) (*Account, error) {
 	}
 
 	return nil, fmt.Errorf("account with id %d not found", id)
+}
+
+func (s *PostgresStorage) TransferMoney(from, to int, amount float64) error {
+	_, err := s.db.Query(`
+		UPDATE accounts SET balance = balance - $1 WHERE id = $2
+		UPDATE accounts SET balance = balance + $1 WHERE id = $3
+	`, amount, from, to)
+
+	return err
 }
 
 func scanIntoAccount(rows *sql.Rows) (*Account, error) {
